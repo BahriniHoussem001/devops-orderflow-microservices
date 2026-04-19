@@ -10,8 +10,8 @@ namespace NotificationService.Api.Services
     public class RabbitMqConsumer : BackgroundService
     {
         private readonly IServiceScopeFactory _scopeFactory;
-        private readonly RabbitMQ.Client.IConnection _connection;
-        private readonly RabbitMQ.Client.IModel _channel;
+        private RabbitMQ.Client.IConnection? _connection;
+        private RabbitMQ.Client.IModel? _channel;
 
         public RabbitMqConsumer(IServiceScopeFactory scopeFactory)
         {
@@ -22,16 +22,40 @@ namespace NotificationService.Api.Services
                 HostName = Environment.GetEnvironmentVariable("RABBITMQ_HOST") ?? "localhost"
             };
 
-            _connection = factory.CreateConnection();
-            _channel = _connection.CreateModel();
+            int retries = 5;
+            int delayMilliseconds = 3000;
 
-            _channel.QueueDeclare(
-                queue: "order-created",
-                durable: false,
-                exclusive: false,
-                autoDelete: false,
-                arguments: null
-            );
+            while (retries > 0)
+            {
+                try
+                {
+                    _connection = factory.CreateConnection();
+                    _channel = _connection.CreateModel();
+
+                    _channel.QueueDeclare(
+                        queue: "order-created",
+                        durable: false,
+                        exclusive: false,
+                        autoDelete: false,
+                        arguments: null
+                    );
+
+                    Console.WriteLine("Connected to RabbitMQ");
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    retries--;
+                    Console.WriteLine($"RabbitMQ not ready, retrying... Remaining tries: {retries}");
+                    Console.WriteLine(ex.Message);
+                    Thread.Sleep(delayMilliseconds);
+                }
+            }
+
+            if (_connection == null || _channel == null)
+            {
+                throw new Exception("Could not connect to RabbitMQ after several retries.");
+            }
         }
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -40,23 +64,30 @@ namespace NotificationService.Api.Services
 
             consumer.Received += async (model, ea) =>
             {
-                var body = ea.Body.ToArray();
-                var message = Encoding.UTF8.GetString(body);
-
-                Console.WriteLine($"[Notification Service] Received: {message}");
-
-                using var scope = _scopeFactory.CreateScope();
-                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-                var notification = new Notification
+                try
                 {
-                    OrderId = 0,
-                    Message = message,
-                    CreatedAt = DateTime.UtcNow
-                };
+                    var body = ea.Body.ToArray();
+                    var message = Encoding.UTF8.GetString(body);
 
-                dbContext.Notifications.Add(notification);
-                await dbContext.SaveChangesAsync();
+                    Console.WriteLine($"[Notification Service] Received: {message}");
+
+                    using var scope = _scopeFactory.CreateScope();
+                    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+                    var notification = new Notification
+                    {
+                        OrderId = 0,
+                        Message = message,
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    dbContext.Notifications.Add(notification);
+                    await dbContext.SaveChangesAsync(stoppingToken);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error while processing RabbitMQ message: {ex.Message}");
+                }
             };
 
             _channel.BasicConsume(
@@ -66,6 +97,15 @@ namespace NotificationService.Api.Services
             );
 
             return Task.CompletedTask;
+        }
+
+        public override void Dispose()
+        {
+            _channel?.Close();
+            _channel?.Dispose();
+            _connection?.Close();
+            _connection?.Dispose();
+            base.Dispose();
         }
     }
 }

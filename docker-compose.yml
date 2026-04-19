@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  order-postgres:
+    image: postgres:16
+    container_name: order-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: orders_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - order_postgres_data:/var/lib/postgresql/data
+
+  notification-postgres:
+    image: postgres:16
+    container_name: notification-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: notifications_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - notification_postgres_data:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  orderservice:
+    build:
+      context: ./OrderService.Api
+      dockerfile: Dockerfile
+    container_name: orderservice
+    ports:
+      - "8081:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      RABBITMQ_HOST: rabbitmq
+      ConnectionStrings__DefaultConnection: Host=order-postgres;Port=5432;Database=orders_db;Username=postgres;Password=postgres
+    depends_on:
+      - order-postgres
+      - rabbitmq
+
+  notificationservice:
+    build:
+      context: ./NotificationService.Api
+      dockerfile: Dockerfile
+    container_name: notificationservice
+    ports:
+      - "8082:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      RABBITMQ_HOST: rabbitmq
+      ConnectionStrings__DefaultConnection: Host=notification-postgres;Port=5432;Database=notifications_db;Username=postgres;Password=postgres
+    depends_on:
+      - notification-postgres
+      - rabbitmq
+
+volumes:
+  order_postgres_data:
+  notification_postgres_data:
