@@ -19,7 +19,7 @@ namespace NotificationService.Api.Services
 
             var factory = new ConnectionFactory()
             {
-                HostName = "localhost"
+                HostName = Environment.GetEnvironmentVariable("RABBITMQ_HOST") ?? "localhost"
             };
 
             _connection = factory.CreateConnection();
