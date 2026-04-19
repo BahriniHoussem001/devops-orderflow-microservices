@@ -4,9 +4,9 @@
     {
         public int Id { get; set; }
 
-        public string CustomerName { get; set; }
+        public string CustomerName { get; set; }= string.Empty;
 
-        public string Product { get; set; }
+        public string Product { get; set; } = string.Empty;
 
         public int Quantity { get; set; }
 
