@@ -35,3 +35,9 @@ jobs:
 
       - name: Build NotificationService
         run: dotnet build ./NotificationService.Api/NotificationService.Api.csproj --no-restore --configuration Release
+
+      - name: Build Docker image for OrderService
+        run: docker build -t orderservice-ci ./OrderService.Api
+
+      - name: Build Docker image for NotificationService
+        run: docker build -t notificationservice-ci ./NotificationService.Api
