@@ -12,7 +12,7 @@ on:
       - dev
 
 jobs:
-  build:
+  build-test-scan:
     runs-on: ubuntu-latest
 
     steps:
@@ -53,32 +53,25 @@ jobs:
         run: dotnet build ./NotificationService.Api/NotificationService.Api.csproj --no-restore --configuration Release
 
       - name: Build Docker image for OrderService
-        run: docker build -t orderservice-ci ./OrderService.Api
+        run: docker build -t orderservice-ci:latest ./OrderService.Api
 
       - name: Build Docker image for NotificationService
-        run: docker build -t notificationservice-ci ./NotificationService.Api
-
-      - name: End SonarCloud analysis
-        run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
-
-  scan:
-    runs-on: ubuntu-latest
-    needs: build
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+        run: docker build -t notificationservice-ci:latest ./NotificationService.Api
 
       - name: Install Trivy
         run: |
-          sudo apt-get install wget apt-transport-https gnupg lsb-release -y
-          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
-          echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
           sudo apt-get update
-          sudo apt-get install trivy -y
+          sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo gpg --dearmor -o /usr/share/keyrings/trivy.gpg
+          echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install -y trivy
 
-      - name: Scan OrderService image
-        run: trivy image orderservice-ci
+      - name: Scan OrderService image with Trivy
+        run: trivy image --severity HIGH,CRITICAL --exit-code 0 orderservice-ci:latest
 
-      - name: Scan NotificationService image
-        run: trivy image notificationservice-ci
+      - name: Scan NotificationService image with Trivy
+        run: trivy image --severity HIGH,CRITICAL --exit-code 0 notificationservice-ci:latest
+
+      - name: End SonarCloud analysis
+        run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
