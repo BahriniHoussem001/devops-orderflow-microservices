@@ -18,11 +18,27 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+
+      - name: Install SonarScanner for .NET
+        run: dotnet tool install --global dotnet-sonarscanner
+
+      - name: Add .NET tools to PATH
+        run: echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
+      - name: Begin SonarCloud analysis
+        run: >
+          dotnet sonarscanner begin
+          /k:"BahriniHoussem001_devops-orderflow-microservices"
+          /o:"bahrinihoussem001"
+          /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+          /d:sonar.host.url="https://sonarcloud.io"
 
       - name: Restore OrderService dependencies
         run: dotnet restore ./OrderService.Api/OrderService.Api.csproj
@@ -41,3 +57,6 @@ jobs:
 
       - name: Build Docker image for NotificationService
         run: docker build -t notificationservice-ci ./NotificationService.Api
+
+      - name: End SonarCloud analysis
+        run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
