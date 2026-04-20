@@ -53,7 +53,7 @@ namespace NotificationService.Api.Services
 
             if (_connection == null || _channel == null)
             {
-                throw new Exception("Could not connect to RabbitMQ after several retries.");
+                throw new InvalidOperationException("Could not connect to RabbitMQ after several retries.");
             }
         }
 
