@@ -4,7 +4,6 @@ using NotificationService.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Build connection string with password from environment variable
 var postgresPassword = Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "postgres";
 var baseConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 var finalConnectionString = $"{baseConnectionString};Password={postgresPassword}";
@@ -28,7 +27,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// app.UseHttpsRedirection(); // temporarily disabled for Docker/local HTTP
+// app.UseHttpsRedirection(); // kept disabled for local Docker HTTP
+
 app.UseAuthorization();
 
 app.MapControllers();

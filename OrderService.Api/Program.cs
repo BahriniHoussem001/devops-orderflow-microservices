@@ -3,7 +3,6 @@ using OrderService.Api.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Build connection string with password from environment variable
 var postgresPassword = Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "postgres";
 var baseConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 var finalConnectionString = $"{baseConnectionString};Password={postgresPassword}";
@@ -25,7 +24,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// app.UseHttpsRedirection(); // temporarily disabled for Docker/local HTTP
+// app.UseHttpsRedirection(); // kept disabled for local Docker HTTP
 
 app.UseAuthorization();
 
@@ -36,7 +35,7 @@ app.Urls.Add("http://0.0.0.0:8080");
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    dbContext.Database.Migrate();
+    await dbContext.Database.MigrateAsync();
 }
 
-app.Run();
+await app.RunAsync();
