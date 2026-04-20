@@ -10,9 +10,8 @@ namespace NotificationService.Api.Services
     public class RabbitMqConsumer : BackgroundService
     {
         private readonly IServiceScopeFactory _scopeFactory;
-        private RabbitMQ.Client.IConnection? _connection;
-        private RabbitMQ.Client.IModel? _channel;
-
+        private readonly IConnection _connection;
+        private readonly IModel _channel;
         public RabbitMqConsumer(IServiceScopeFactory scopeFactory)
         {
             _scopeFactory = scopeFactory;
