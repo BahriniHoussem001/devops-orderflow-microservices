@@ -42,7 +42,8 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       RABBITMQ_HOST: rabbitmq
-      ConnectionStrings__DefaultConnection: Host=order-postgres;Port=5432;Database=orders_db;Username=postgres;Password=postgres
+      POSTGRES_PASSWORD: postgres
+      ConnectionStrings__DefaultConnection: Host=order-postgres;Port=5432;Database=orders_db;Username=postgres
     depends_on:
       - order-postgres
       - rabbitmq
@@ -57,7 +58,8 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       RABBITMQ_HOST: rabbitmq
-      ConnectionStrings__DefaultConnection: Host=notification-postgres;Port=5432;Database=notifications_db;Username=postgres;Password=postgres
+      POSTGRES_PASSWORD: postgres
+      ConnectionStrings__DefaultConnection: Host=notification-postgres;Port=5432;Database=notifications_db;Username=postgres
     depends_on:
       - notification-postgres
       - rabbitmq
