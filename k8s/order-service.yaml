@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orderservice
+  namespace: orderflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orderservice
+  template:
+    metadata:
+      labels:
+        app: orderservice
+    spec:
+      containers:
+        - name: orderservice
+          image: houssem689/orderservice:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Development
+            - name: RABBITMQ_HOST
+              value: rabbitmq
+            - name: POSTGRES_PASSWORD
+              value: postgres
+            - name: ConnectionStrings__DefaultConnection
+              value: Host=order-postgres;Port=5432;Database=orders_db;Username=postgres
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orderservice
+  namespace: orderflow
+spec:
+  selector:
+    app: orderservice
+  ports:
+    - port: 8080
+      targetPort: 8080
+  type: ClusterIP
