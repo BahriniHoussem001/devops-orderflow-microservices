@@ -29,7 +29,7 @@ namespace OrderService.Api.Controllers
             //  Envoi RabbitMQ
             var factory = new ConnectionFactory()
             {
-                HostName = "localhost"
+                HostName = Environment.GetEnvironmentVariable("RABBITMQ_HOST") ?? "localhost"
             };
 
             using var connection = factory.CreateConnection();
