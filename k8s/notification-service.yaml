@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notificationservice
+  namespace: orderflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notificationservice
+  template:
+    metadata:
+      labels:
+        app: notificationservice
+    spec:
+      containers:
+        - name: notificationservice
+          image: houssem689/notificationservice:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Development
+            - name: RABBITMQ_HOST
+              value: rabbitmq
+            - name: POSTGRES_PASSWORD
+              value: postgres
+            - name: ConnectionStrings__DefaultConnection
+              value: Host=notification-postgres;Port=5432;Database=notifications_db;Username=postgres
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notificationservice
+  namespace: orderflow
+spec:
+  selector:
+    app: notificationservice
+  ports:
+    - port: 8080
+      targetPort: 8080
+  type: ClusterIP
